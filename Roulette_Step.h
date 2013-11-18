@@ -3,11 +3,12 @@
 
 enum Roulette_Step
 {
+  Start,
   Waiting,
   SendingRed,
   SendingGreen,
   SendingBlue,
   ShowResult
-}
+};
 
 #endif
