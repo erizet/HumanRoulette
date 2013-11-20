@@ -19,13 +19,14 @@ RCSwitch mySwitch;
    
 char sendStrings[4][13] = {
   "FFFFFFFF0rgb",
-  "FFFFFFFF0rgb",
-  "FFFFFFFF0rgb",
-  "FFFFFFFF0rgb"  
+  "1FFFFFFF0rgb",
+  "F1FFFFFF0rgb",
+  "FF1FFFFF0rgb"  
 };
 
+int winningHat;
 unsigned long lastTime = 0;
-Roulette_Step currentStep = Waiting;
+Roulette_Step currentStep = Start;
 
 void setup() {
 
@@ -34,6 +35,7 @@ void setup() {
   // while the serial stream is not open, do nothing:
   while (!Serial) 
     ;
+
   
   Serial.println("----- Setup -----");
   Serial.print("Transmit pin: ");
@@ -71,7 +73,7 @@ void loop() {
 
   //for(int i=140; i<180; i+=2)
   {
-  //Serial.println("Sending...");
+//  Serial.println("test...");
   //Serial.println(i);
     //mySwitch.setPulseLength(i);
       //mySwitch.setPulseLength(PULSE_LENGTH);
@@ -84,7 +86,7 @@ void loop() {
   }
   
   NextStep();
-  
+  delay(200);
 
 }
 
@@ -103,8 +105,11 @@ void NextStep()
       currentStep = Waiting;
       lastTime = newTime;
       break;
+ 
     case Waiting:
-      if(elapsedTime > 15000)
+      Serial.print("Waiting......elapsed: ");
+      Serial.println(elapsedTime);
+      if(elapsedTime > 5000)
       {
         lastTime = newTime;
         currentStep = SendingRed;
@@ -112,36 +117,46 @@ void NextStep()
       break;
 
     case SendingRed:
+      Serial.print("Red......elapsed: ");
+      Serial.println(elapsedTime);
       if(elapsedTime > 1000)
       {
         if(Step_Sending(true, false, false))
         {
-          lastTime = newTime;
           currentStep = SendingGreen;
         }
+        lastTime = newTime;
       }
       break;
     case SendingGreen:
+      Serial.print("Green......elapsed: ");
+      Serial.println(elapsedTime);
       if(elapsedTime > 1000)
       {
         if(Step_Sending(false, true, false))
         {
-          lastTime = newTime;
           currentStep = SendingBlue;
         }
+      lastTime = newTime;
       }
       break;
     case SendingBlue:
+      Serial.print("Blue......elapsed: ");
+      Serial.println(elapsedTime);
       if(elapsedTime > 1000)
       {
         if(Step_Sending(false, false, true))
         {
-          lastTime = newTime;
           currentStep = ShowResult;
+          winningHat = random(0,3);
         }
+        lastTime = newTime;
       }
       break;
     case ShowResult:
+      Serial.println("Finished");
+      lastTime = newTime;
+      currentStep = Start;
       break;
   }
 }
@@ -159,8 +174,11 @@ boolean Step_Sending(boolean red, boolean green, boolean blue)
       SetColor(i, false, false, false);
   }
   
-  hat++;
+  Send();
   
+  hat++;
+  Serial.print("Hat: ");
+  Serial.println(hat);
   if(hat>3)
   {
     hat = 0;
@@ -177,14 +195,14 @@ void SetColor(int hatNo, boolean red, boolean green, boolean blue)
     case 0:    
     case 1:    
     case 2:
-      sendStrings[hatNo][10] = red ? '1' : '0';
-      sendStrings[hatNo][11] = green ? '1' : '0';
-      sendStrings[hatNo][12] = blue ? '1' : '0';
+      sendStrings[hatNo][9] = red ? '1' : '0';
+      sendStrings[hatNo][10] = green ? '1' : '0';
+      sendStrings[hatNo][11] = blue ? '1' : '0';
       break;
     case 3:
-      sendStrings[hatNo][10] = red ? '1' : '0';
-      sendStrings[hatNo][11] = green ? '1' : '0';
-      sendStrings[hatNo][12] = blue ? '1' : '0';      
+      sendStrings[hatNo][9] = red ? '1' : '0';
+      sendStrings[hatNo][10] = green ? '1' : '0';
+      sendStrings[hatNo][11] = blue ? '1' : '0';      
       break;
   }
 }
@@ -197,7 +215,8 @@ void Send()
     Serial.print("Sending: ");
     Serial.println(sendStrings[i]);
     
-//    mySwitch.sendTriState("FFFFFFFF1111");
+    mySwitch.sendTriState(sendStrings[i]);
+    delay(100);
   }
   
 }
