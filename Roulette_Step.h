@@ -4,6 +4,7 @@
 enum Roulette_Step
 {
   Start,
+  WaitingForStartButton,
   Waiting,
   SendingRed,
   SendingGreen,

@@ -1,3 +1,4 @@
+
 /*
   HumanRoulette
 */
@@ -5,15 +6,18 @@
 #include "Arduino.h"
 #include <RCSwitch.h>
 #include "Roulette_Step.h"
+#include <Button.h>
 
 #define TRANSMIT_PIN 4
 #define PULSE_LENGTH 170
 #define REPEAT_TRANSMIT 2
 
-#define START_BUTTON 10
-#define FUNCTION_BUTTON 11
-#define START_BUTTON_LIGHT 5
+#define START_BUTTON_PIN 10
+#define FUNCTION_BUTTON_PIN 11
+#define START_BUTTON_LIGHT 12
 #define FUNCTION_BUTTON_LIGHT 6
+
+Button startButton = Button(START_BUTTON_PIN, BUTTON_PULLUP, true, 50);
 
 RCSwitch mySwitch;
    
@@ -24,6 +28,8 @@ char sendStrings[4][13] = {
   "FF1FFFFF0rgb"  
 };
 
+boolean startButtonLightOn = false;
+boolean rouletteStarted = false;
 int winningHat;
 unsigned long lastTime = 0;
 Roulette_Step currentStep = Start;
@@ -52,41 +58,41 @@ void setup() {
   //mySwitch.setRepeatTransmit(REPEAT_TRANSMIT);
   
   Serial.print("Start button pin: ");
-  Serial.println(START_BUTTON);
+  Serial.println(START_BUTTON_PIN);
   Serial.print("Function button pin: ");
-  Serial.println(FUNCTION_BUTTON);  
+  Serial.println(FUNCTION_BUTTON_PIN);  
   Serial.print("Start button light pin: ");
   Serial.println(START_BUTTON_LIGHT);
   Serial.print("Function button light pin: ");
   Serial.println(FUNCTION_BUTTON_LIGHT);
 
-/*  pinMode(START_BUTTON,INPUT);
-  pinMode(FUNCTION_BUTTON,INPUT);
+  pinMode(START_BUTTON_PIN,INPUT);
+  pinMode(FUNCTION_BUTTON_PIN,INPUT);
   pinMode(START_BUTTON_LIGHT,OUTPUT);
   pinMode(FUNCTION_BUTTON_LIGHT,OUTPUT);
-  */
+  
   
 
 }
 
 void loop() {
-
-  //for(int i=140; i<180; i+=2)
+/*  startButton.process();
+  if(startButton.isPressed()){
+    Serial.println("pressed");
+    rouletteStarted = !rouletteStarted;
+    digitalWrite(START_BUTTON_LIGHT, HIGH);
+  }  
+  else
   {
-//  Serial.println("test...");
-  //Serial.println(i);
-    //mySwitch.setPulseLength(i);
-      //mySwitch.setPulseLength(PULSE_LENGTH);
-
-    /* Same switch as above, but tri-state code */ 
- //   mySwitch.sendTriState("FFFFFFFF0000");
- //   delay(500);   
- //    mySwitch.sendTriState("FFFFFFFF1111");
- //   delay(500);
+        digitalWrite(START_BUTTON_LIGHT, LOW);
+  }
+  */
+  //if(rouletteStarted)
+  {  
+    NextStep();
   }
   
-  NextStep();
-  delay(200);
+  //delay(200);
 
 }
 
@@ -102,10 +108,22 @@ void NextStep()
       for(int i=0; i<4; i++)
         SetColor(i, false, false, false);
       Send();
-      currentStep = Waiting;
+      currentStep = WaitingForStartButton;
       lastTime = newTime;
       break;
- 
+    case WaitingForStartButton:
+      startButton.process();
+      if(startButton.isPressed()){
+        currentStep = Waiting;
+        lastTime = newTime;
+        digitalWrite(START_BUTTON_LIGHT, LOW);
+      } else if(elapsedTime > 400)
+      {
+        lastTime = newTime;
+        startButtonLightOn = !startButtonLightOn;
+        digitalWrite(START_BUTTON_LIGHT, startButtonLightOn);
+      }
+      break;
     case Waiting:
       Serial.print("Waiting......elapsed: ");
       Serial.println(elapsedTime);
