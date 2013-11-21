@@ -17,7 +17,8 @@
 #define START_BUTTON_LIGHT 12
 #define FUNCTION_BUTTON_LIGHT 6
 
-Button startButton = Button(START_BUTTON_PIN, BUTTON_PULLUP, true, 50);
+Button startButton = Button(START_BUTTON_PIN, BUTTON_PULLUP, false, 0);
+Button functionButton = Button(FUNCTION_BUTTON_PIN, BUTTON_PULLUP, false, 0);
 
 RCSwitch mySwitch;
    
@@ -29,7 +30,6 @@ char sendStrings[4][13] = {
 };
 
 boolean startButtonLightOn = false;
-boolean rouletteStarted = false;
 int winningHat;
 unsigned long lastTime = 0;
 Roulette_Step currentStep = Start;
@@ -108,21 +108,36 @@ void NextStep()
       for(int i=0; i<4; i++)
         SetColor(i, false, false, false);
       Send();
-      currentStep = WaitingForStartButton;
+      currentStep = WaitingForButton;
       lastTime = newTime;
       break;
-    case WaitingForStartButton:
+    case WaitingForButton:
       startButton.process();
+      functionButton.process();
+
       if(startButton.isPressed()){
         currentStep = Waiting;
         lastTime = newTime;
         digitalWrite(START_BUTTON_LIGHT, LOW);
-      } else if(elapsedTime > 400)
+        digitalWrite(FUNCTION_BUTTON_LIGHT, LOW);
+      } 
+      else if(functionButton.isPressed()){
+        currentStep = SendNexa;
+        lastTime = newTime;
+        digitalWrite(START_BUTTON_LIGHT, LOW);
+        digitalWrite(FUNCTION_BUTTON_LIGHT, HIGH);
+      }
+      else if(elapsedTime > 400)
       {
         lastTime = newTime;
         startButtonLightOn = !startButtonLightOn;
         digitalWrite(START_BUTTON_LIGHT, startButtonLightOn);
+        digitalWrite(FUNCTION_BUTTON_LIGHT, startButtonLightOn);
       }
+
+      break;
+    case SendNexa:
+      currentStep = Start;
       break;
     case Waiting:
       Serial.print("Waiting......elapsed: ");
