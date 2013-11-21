@@ -30,9 +30,12 @@ char sendStrings[4][13] = {
 };
 
 boolean startButtonLightOn = false;
-int winningHat;
 unsigned long lastTime = 0;
 Roulette_Step currentStep = Start;
+int timesToSendRed = 0;
+int timesToSendGreen = 0;
+int timesToSendBlue = 0;
+int winningHat = 0;
 
 void setup() {
 
@@ -105,9 +108,6 @@ void NextStep()
   switch(currentStep)
   {
     case Start:
-      for(int i=0; i<4; i++)
-        SetColor(i, false, false, false);
-      Send();
       currentStep = WaitingForButton;
       lastTime = newTime;
       break;
@@ -139,6 +139,27 @@ void NextStep()
     case SendNexa:
       currentStep = Start;
       break;
+    case InitializeSending:
+      // reset all hats
+      for(int i=0; i<4; i++)
+        SetColor(i, false, false, false);
+      Send();
+
+      // randomize the number of laps around
+      winningHat = random(0,3);
+      timesToSendRed = random(1,3);
+      timesToSendGreen = random(1,3);
+      timesToSendBlue = random(1,3);
+      Serial.println("Initialize sending");
+      Serial.print("Times to send red: ");
+      Serial.println(timesToSendRed);
+      Serial.print("Times to send green: ");
+      Serial.println(timesToSendGreen);
+      Serial.print("Times to send blue: ");
+      Serial.println(timesToSendBlue);
+
+      currentStep = Waiting;
+      break;
     case Waiting:
       Serial.print("Waiting......elapsed: ");
       Serial.println(elapsedTime);
@@ -148,7 +169,6 @@ void NextStep()
         currentStep = SendingRed;
       }
       break;
-
     case SendingRed:
       Serial.print("Red......elapsed: ");
       Serial.println(elapsedTime);
@@ -156,7 +176,9 @@ void NextStep()
       {
         if(Step_Sending(true, false, false))
         {
-          currentStep = SendingGreen;
+          timesToSendRed--; 
+          if(timesToSendRed<0)
+            currentStep = SendingGreen;
         }
         lastTime = newTime;
       }
@@ -168,7 +190,9 @@ void NextStep()
       {
         if(Step_Sending(false, true, false))
         {
-          currentStep = SendingBlue;
+          timesToSendGreen--; 
+          if(timesToSendGreen<0)
+            currentStep = SendingBlue;
         }
       lastTime = newTime;
       }
@@ -180,16 +204,38 @@ void NextStep()
       {
         if(Step_Sending(false, false, true))
         {
-          currentStep = ShowResult;
-          winningHat = random(0,3);
+          timesToSendBlue--; 
+          if(timesToSendBlue<0)
+            currentStep = ShowResult;
         }
         lastTime = newTime;
       }
       break;
     case ShowResult:
-      Serial.println("Finished");
-      lastTime = newTime;
-      currentStep = Start;
+      Serial.print("ShowResult...elapsed: ");
+      Serial.println(elapsedTime);
+      if(elapsedTime > 1000)
+      {
+        if(winningHat>=0)
+        {
+           Step_Sending(true, true, true))
+           winningHat--;
+        }
+        else
+        {
+           currentStep = Finished;
+        }
+        lastTime = newTime;
+      }
+      break;
+    case Finished:
+      Serial.print("Finished....elapsed: ");
+      Serial.println(elapsedTime);
+      if(elapsedTime > 10000)
+      {
+        lastTime = newTime;
+        currentStep = Start;
+      }
       break;
   }
 }
