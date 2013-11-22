@@ -7,6 +7,7 @@
 #include <RCSwitch.h>
 #include "Roulette_Step.h"
 #include <Button.h>
+#include "tx433_proove.h"
 
 #define TRANSMIT_PIN 4
 #define PULSE_LENGTH 170
@@ -21,6 +22,14 @@ Button startButton = Button(START_BUTTON_PIN, BUTTON_PULLUP, false, 0);
 Button functionButton = Button(FUNCTION_BUTTON_PIN, BUTTON_PULLUP, false, 0);
 
 RCSwitch mySwitch;
+
+// The transmitter unique address (you will need to chage this)
+char *transmitter = "1010100101101001010101100101011001010101010101010110";
+// The transmitter channel (might need to change this)
+char *channel="0101";
+// Create an instance of the Proove class
+Tx433_Proove Proove(4, transmitter, channel);
+
    
 char sendStrings[4][13] = {
   "FFFFFFFF0rgb",
@@ -132,11 +141,21 @@ void NextStep()
         lastTime = newTime;
         startButtonLightOn = !startButtonLightOn;
         digitalWrite(START_BUTTON_LIGHT, startButtonLightOn);
-        digitalWrite(FUNCTION_BUTTON_LIGHT, startButtonLightOn);
+        digitalWrite(FUNCTION_BUTTON_LIGHT, !startButtonLightOn);
       }
 
       break;
     case SendNexa:
+      Serial.println("SendNexa....");
+  
+      for(int i= 0; i<3; i++)
+      {
+        Proove.Device_On(1);
+        delay(1500);
+        Proove.Device_Off(1);
+        delay(1500);
+      }
+
       currentStep = Start;
       break;
     case InitializeSending:
@@ -218,7 +237,7 @@ void NextStep()
       {
         if(winningHat>=0)
         {
-           Step_Sending(true, true, true))
+           Step_Sending(true, true, true);
            winningHat--;
         }
         else

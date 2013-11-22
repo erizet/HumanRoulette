@@ -7,10 +7,12 @@ enum Roulette_Step
   WaitingForButton,
   SendNexa,
   Waiting,
+  InitializeSending,
   SendingRed,
   SendingGreen,
   SendingBlue,
-  ShowResult
+  ShowResult,
+  Finished
 };
 
 #endif
