@@ -13,9 +13,9 @@
 #define PULSE_LENGTH 170
 #define REPEAT_TRANSMIT 2
 
-#define START_BUTTON_PIN 10
-#define FUNCTION_BUTTON_PIN 11
-#define START_BUTTON_LIGHT 12
+#define START_BUTTON_PIN 11
+#define FUNCTION_BUTTON_PIN 10
+#define START_BUTTON_LIGHT 7
 #define FUNCTION_BUTTON_LIGHT 6
 
 Button startButton = Button(START_BUTTON_PIN, BUTTON_PULLUP, false, 0);
@@ -32,10 +32,10 @@ Tx433_Proove Proove(4, transmitter, channel);
 
    
 char sendStrings[4][13] = {
-  "FFFFFFFF0rgb",
   "1FFFFFFF0rgb",
   "F1FFFFFF0rgb",
-  "FF1FFFFF0rgb"  
+  "FF1FFFFF0rgb",
+  "FFF1FFFF0rgb"  
 };
 
 boolean startButtonLightOn = false;
@@ -117,6 +117,7 @@ void NextStep()
   switch(currentStep)
   {
     case Start:
+      Serial.println("Start....");
       currentStep = WaitingForButton;
       lastTime = newTime;
       break;
@@ -125,7 +126,7 @@ void NextStep()
       functionButton.process();
 
       if(startButton.isPressed()){
-        currentStep = Waiting;
+        currentStep = InitializeSending;
         lastTime = newTime;
         digitalWrite(START_BUTTON_LIGHT, LOW);
         digitalWrite(FUNCTION_BUTTON_LIGHT, LOW);
@@ -162,7 +163,7 @@ void NextStep()
       // reset all hats
       for(int i=0; i<4; i++)
         SetColor(i, false, false, false);
-      Send();
+      Send(-1);
 
       // randomize the number of laps around
       winningHat = random(0,3);
@@ -180,9 +181,9 @@ void NextStep()
       currentStep = Waiting;
       break;
     case Waiting:
-      Serial.print("Waiting......elapsed: ");
-      Serial.println(elapsedTime);
-      if(elapsedTime > 5000)
+      //Serial.print("Waiting......elapsed: ");
+      //Serial.println(elapsedTime);
+      if(elapsedTime > 500)
       {
         lastTime = newTime;
         currentStep = SendingRed;
@@ -248,9 +249,9 @@ void NextStep()
       }
       break;
     case Finished:
-      Serial.print("Finished....elapsed: ");
-      Serial.println(elapsedTime);
-      if(elapsedTime > 10000)
+      //Serial.print("Finished....elapsed: ");
+      //Serial.println(elapsedTime);
+      if(elapsedTime > 5000)
       {
         lastTime = newTime;
         currentStep = Start;
@@ -272,7 +273,7 @@ boolean Step_Sending(boolean red, boolean green, boolean blue)
       SetColor(i, false, false, false);
   }
   
-  Send();
+  Send(hat);
   
   hat++;
   Serial.print("Hat: ");
@@ -293,28 +294,33 @@ void SetColor(int hatNo, boolean red, boolean green, boolean blue)
     case 0:    
     case 1:    
     case 2:
-      sendStrings[hatNo][9] = red ? '1' : '0';
-      sendStrings[hatNo][10] = green ? '1' : '0';
-      sendStrings[hatNo][11] = blue ? '1' : '0';
+      sendStrings[hatNo][11] = red ? '1' : '0';
+      sendStrings[hatNo][9] = green ? '1' : '0';
+      sendStrings[hatNo][10] = blue ? '1' : '0';
       break;
     case 3:
       sendStrings[hatNo][9] = red ? '1' : '0';
-      sendStrings[hatNo][10] = green ? '1' : '0';
-      sendStrings[hatNo][11] = blue ? '1' : '0';      
+      sendStrings[hatNo][11] = green ? '1' : '0';
+      sendStrings[hatNo][10] = blue ? '1' : '0';      
       break;
   }
 }
 
 
-void Send()
+void Send(int hatWithColor)
 {
   for(int i=0; i<4; i++)
   {
-    Serial.print("Sending: ");
-    Serial.println(sendStrings[i]);
-    
-    mySwitch.sendTriState(sendStrings[i]);
-    delay(100);
+    if(i!=hatWithColor)
+    {
+      Serial.print("Sending: ");
+      Serial.println(sendStrings[i]);
+      
+      mySwitch.sendTriState(sendStrings[i]);
+      delay(10);
+    }
   }
-  
+
+  // always sends hat with color last
+  mySwitch.sendTriState(sendStrings[hatWithColor]);
 }
